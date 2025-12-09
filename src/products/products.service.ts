@@ -74,7 +74,9 @@ export class ProductsService {
       product = await queryBuilder.where('LOWER(title) =:title or slug=:slug', {
         title: term.toLowerCase(),
         slug: term.toLowerCase(),
-      }).leftJoinAndSelect('prod.images', 'prodImages').getOne();
+      }).leftJoinAndSelect('prod.images', 'prodImages')
+        .leftJoinAndSelect('prod.user', 'user')
+        .getOne();
     }
     if(!product)
       throw new NotFoundException(`Product with id ${term} not found`);

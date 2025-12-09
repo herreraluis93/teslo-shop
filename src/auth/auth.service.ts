@@ -5,9 +5,10 @@ import { JwtService } from '@nestjs/jwt';
 
 import * as bcrypt from 'bcrypt';
 
-import { LoginUserDto, CreateUserDto } from './dto';
+import { LoginUserDto, CreateUserDto, LoginUserResponseDto } from './dto';
 import { User } from './entities/user.entity';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
+import { CreateUserResponseDto } from './dto/create-user-response.dto';
 
 @Injectable()
 export class AuthService {
@@ -26,17 +27,21 @@ export class AuthService {
         password: bcrypt.hashSync( password, 10 )
       });
       await this.userRepository.save( user );
-      const { password: encryptedPass, ...newUser } = user;
-      return {
-      ...newUser,
-      token: this.getJwtToken({ id: newUser.id })
-    };
+      const createUserResponseDto: CreateUserResponseDto = {
+        id: user.id,
+        email: user.email,
+        fullName: user.fullName,
+        isActive: user.isActive,
+        roles: user.roles,
+        token: this.getJwtToken({ id: user.id })
+      };
+      return createUserResponseDto;
     } catch (error) {
       this.handleDBErrors(error);
     }
   }
 
-  async login(loginUserDto: LoginUserDto) {
+  async login(loginUserDto: LoginUserDto): Promise<LoginUserResponseDto> {
     
     const { password, email } = loginUserDto;
     const user = await this.userRepository.findOne({
@@ -49,10 +54,13 @@ export class AuthService {
 
     if( !bcrypt.compareSync( password, user.password ) )
       throw new UnauthorizedException('Credentials are not valid (password)');
-    return {
-      ...user,
+    const loginUserResponseDto: LoginUserResponseDto = {
+      id: user.id,
+      email: user.email,
+      password: user.password,
       token: this.getJwtToken({ id: user.id })
     };
+    return loginUserResponseDto;
   }
 
   async checkAuthStatus(user: User) {
